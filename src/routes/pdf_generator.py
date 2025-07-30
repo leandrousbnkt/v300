@@ -119,6 +119,26 @@ class PDFGenerator:
             story.extend(self._build_avatar_section(analysis_data['avatar_ultra_detalhado']))
             story.append(PageBreak())
         
+        # Drivers Mentais Customizados
+        if 'drivers_mentais_customizados' in analysis_data:
+            story.extend(self._build_drivers_section(analysis_data['drivers_mentais_customizados']))
+            story.append(PageBreak())
+        
+        # Sistema Anti-Objeção
+        if 'sistema_anti_objecao' in analysis_data:
+            story.extend(self._build_anti_objection_section(analysis_data['sistema_anti_objecao']))
+            story.append(PageBreak())
+        
+        # Provas Visuais
+        if 'provas_visuais_sugeridas' in analysis_data:
+            story.extend(self._build_visual_proofs_section(analysis_data['provas_visuais_sugeridas']))
+            story.append(PageBreak())
+        
+        # Pré-Pitch Invisível
+        if 'pre_pitch_invisivel' in analysis_data:
+            story.extend(self._build_pre_pitch_section(analysis_data['pre_pitch_invisivel']))
+            story.append(PageBreak())
+        
         # Posicionamento
         if 'escopo' in analysis_data:
             story.extend(self._build_positioning_section(analysis_data['escopo']))
@@ -152,6 +172,11 @@ class PDFGenerator:
         # Insights exclusivos
         if 'insights_exclusivos' in analysis_data:
             story.extend(self._build_insights_section(analysis_data['insights_exclusivos']))
+            story.append(PageBreak())
+        
+        # Pesquisa Web Massiva
+        if 'pesquisa_web_massiva' in analysis_data:
+            story.extend(self._build_research_section(analysis_data['pesquisa_web_massiva']))
         
         # Gera PDF
         doc.build(story)
@@ -288,6 +313,175 @@ class PDFGenerator:
             story.append(Paragraph("Desejos Profundos", self.styles['SectionHeader']))
             for desejo in desejos:
                 story.append(Paragraph(f"• {desejo}", self.styles['BulletList']))
+        
+        return story
+    
+    def _build_drivers_section(self, drivers_data) -> list:
+        """Constrói seção de drivers mentais"""
+        story = []
+        
+        story.append(Paragraph("DRIVERS MENTAIS CUSTOMIZADOS", self.styles['CustomTitle']))
+        story.append(Spacer(1, 0.3*inch))
+        
+        if isinstance(drivers_data, dict) and 'drivers_customizados' in drivers_data:
+            drivers = drivers_data['drivers_customizados']
+        elif isinstance(drivers_data, list):
+            drivers = drivers_data
+        else:
+            drivers = []
+        
+        for i, driver in enumerate(drivers, 1):
+            if isinstance(driver, dict):
+                story.append(Paragraph(f"Driver {i}: {driver.get('nome', 'Driver Mental')}", self.styles['SectionHeader']))
+                
+                story.append(Paragraph(f"<b>Gatilho Central:</b> {driver.get('gatilho_central', 'N/A')}", self.styles['CustomNormal']))
+                story.append(Paragraph(f"<b>Definição:</b> {driver.get('definicao_visceral', 'N/A')}", self.styles['CustomNormal']))
+                
+                if driver.get('roteiro_ativacao'):
+                    roteiro = driver['roteiro_ativacao']
+                    story.append(Paragraph("<b>Roteiro de Ativação:</b>", self.styles['CustomNormal']))
+                    story.append(Paragraph(f"• Pergunta: {roteiro.get('pergunta_abertura', 'N/A')}", self.styles['BulletList']))
+                    story.append(Paragraph(f"• História: {roteiro.get('historia_analogia', 'N/A')}", self.styles['BulletList']))
+                    story.append(Paragraph(f"• Comando: {roteiro.get('comando_acao', 'N/A')}", self.styles['BulletList']))
+                
+                if driver.get('frases_ancoragem'):
+                    story.append(Paragraph("<b>Frases de Ancoragem:</b>", self.styles['CustomNormal']))
+                    for frase in driver['frases_ancoragem']:
+                        story.append(Paragraph(f"• \"{frase}\"", self.styles['BulletList']))
+                
+                story.append(Spacer(1, 0.2*inch))
+        
+        return story
+    
+    def _build_anti_objection_section(self, anti_objection_data) -> list:
+        """Constrói seção do sistema anti-objeção"""
+        story = []
+        
+        story.append(Paragraph("SISTEMA ANTI-OBJEÇÃO", self.styles['CustomTitle']))
+        story.append(Spacer(1, 0.3*inch))
+        
+        # Objeções universais
+        if anti_objection_data.get('objecoes_universais'):
+            story.append(Paragraph("Objeções Universais", self.styles['SectionHeader']))
+            
+            for tipo, objecao in anti_objection_data['objecoes_universais'].items():
+                if isinstance(objecao, dict):
+                    story.append(Paragraph(f"<b>{tipo.title()}:</b>", self.styles['CustomNormal']))
+                    story.append(Paragraph(f"Objeção: {objecao.get('objecao', 'N/A')}", self.styles['BulletList']))
+                    story.append(Paragraph(f"Contra-ataque: {objecao.get('contra_ataque', 'N/A')}", self.styles['BulletList']))
+                    story.append(Spacer(1, 0.1*inch))
+        
+        # Objeções ocultas
+        if anti_objection_data.get('objecoes_ocultas'):
+            story.append(Paragraph("Objeções Ocultas", self.styles['SectionHeader']))
+            
+            for tipo, objecao in anti_objection_data['objecoes_ocultas'].items():
+                if isinstance(objecao, dict):
+                    story.append(Paragraph(f"<b>{tipo.replace('_', ' ').title()}:</b>", self.styles['CustomNormal']))
+                    story.append(Paragraph(f"Perfil: {objecao.get('perfil_tipico', 'N/A')}", self.styles['BulletList']))
+                    story.append(Paragraph(f"Contra-ataque: {objecao.get('contra_ataque', 'N/A')}", self.styles['BulletList']))
+                    story.append(Spacer(1, 0.1*inch))
+        
+        return story
+    
+    def _build_visual_proofs_section(self, visual_proofs_data) -> list:
+        """Constrói seção de provas visuais"""
+        story = []
+        
+        story.append(Paragraph("PROVAS VISUAIS INSTANTÂNEAS", self.styles['CustomTitle']))
+        story.append(Spacer(1, 0.3*inch))
+        
+        if isinstance(visual_proofs_data, list):
+            for i, prova in enumerate(visual_proofs_data, 1):
+                if isinstance(prova, dict):
+                    story.append(Paragraph(f"PROVI {i}: {prova.get('nome', 'Prova Visual')}", self.styles['SectionHeader']))
+                    
+                    story.append(Paragraph(f"<b>Conceito Alvo:</b> {prova.get('conceito_alvo', 'N/A')}", self.styles['CustomNormal']))
+                    story.append(Paragraph(f"<b>Experimento:</b> {prova.get('experimento', 'N/A')}", self.styles['CustomNormal']))
+                    
+                    if prova.get('materiais'):
+                        story.append(Paragraph("<b>Materiais:</b>", self.styles['CustomNormal']))
+                        for material in prova['materiais']:
+                            story.append(Paragraph(f"• {material}", self.styles['BulletList']))
+                    
+                    story.append(Spacer(1, 0.2*inch))
+        
+        return story
+    
+    def _build_pre_pitch_section(self, pre_pitch_data) -> list:
+        """Constrói seção do pré-pitch invisível"""
+        story = []
+        
+        story.append(Paragraph("PRÉ-PITCH INVISÍVEL", self.styles['CustomTitle']))
+        story.append(Spacer(1, 0.3*inch))
+        
+        # Orquestração emocional
+        if pre_pitch_data.get('orquestracao_emocional'):
+            story.append(Paragraph("Orquestração Emocional", self.styles['SectionHeader']))
+            
+            sequencia = pre_pitch_data['orquestracao_emocional'].get('sequencia_psicologica', [])
+            for fase in sequencia:
+                if isinstance(fase, dict):
+                    story.append(Paragraph(f"<b>{fase.get('fase', 'Fase')}:</b> {fase.get('objetivo', 'N/A')}", self.styles['CustomNormal']))
+                    story.append(Paragraph(f"Tempo: {fase.get('tempo', 'N/A')}", self.styles['BulletList']))
+                    if fase.get('tecnicas'):
+                        story.append(Paragraph(f"Técnicas: {', '.join(fase['tecnicas'])}", self.styles['BulletList']))
+                    story.append(Spacer(1, 0.1*inch))
+        
+        # Roteiro completo
+        if pre_pitch_data.get('roteiro_completo'):
+            story.append(Paragraph("Roteiro Completo", self.styles['SectionHeader']))
+            roteiro = pre_pitch_data['roteiro_completo']
+            
+            if roteiro.get('abertura'):
+                abertura = roteiro['abertura']
+                story.append(Paragraph(f"<b>Abertura ({abertura.get('tempo', 'N/A')}):</b>", self.styles['CustomNormal']))
+                story.append(Paragraph(abertura.get('script', 'N/A'), self.styles['BulletList']))
+            
+            if roteiro.get('fechamento'):
+                fechamento = roteiro['fechamento']
+                story.append(Paragraph(f"<b>Fechamento ({fechamento.get('tempo', 'N/A')}):</b>", self.styles['CustomNormal']))
+                story.append(Paragraph(fechamento.get('script', 'N/A'), self.styles['BulletList']))
+        
+        return story
+    
+    def _build_research_section(self, research_data) -> list:
+        """Constrói seção da pesquisa web massiva"""
+        story = []
+        
+        story.append(Paragraph("PESQUISA WEB MASSIVA", self.styles['CustomTitle']))
+        story.append(Spacer(1, 0.3*inch))
+        
+        # Estatísticas da pesquisa
+        story.append(Paragraph("Estatísticas da Pesquisa", self.styles['SectionHeader']))
+        
+        stats_data = [
+            ['Métrica', 'Valor'],
+            ['Total de Queries', str(research_data.get('total_queries', 0))],
+            ['Total de Resultados', str(research_data.get('total_resultados', 0))],
+            ['Conteúdo Extraído', f"{research_data.get('conteudo_extraido_chars', 0):,} caracteres"],
+        ]
+        
+        stats_table = Table(stats_data, colWidths=[2*inch, 2*inch])
+        stats_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black)
+        ]))
+        
+        story.append(stats_table)
+        story.append(Spacer(1, 0.2*inch))
+        
+        # Queries executadas
+        if research_data.get('queries_executadas'):
+            story.append(Paragraph("Queries Executadas", self.styles['SectionHeader']))
+            for query in research_data['queries_executadas'][:10]:  # Primeiras 10
+                story.append(Paragraph(f"• {query}", self.styles['BulletList']))
         
         return story
     

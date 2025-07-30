@@ -12,10 +12,12 @@ import json
 from datetime import datetime
 from flask import Blueprint, request, jsonify, session
 from services.enhanced_analysis_engine import enhanced_analysis_engine
+from services.ultra_detailed_analysis_engine import ultra_detailed_analysis_engine
 from services.ai_manager import ai_manager
 from services.production_search_manager import production_search_manager
 from services.attachment_service import attachment_service
 from database import db_manager
+from routes.progress import get_progress_tracker, update_analysis_progress
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +51,14 @@ def analyze_market():
         if not data.get('session_id'):
             data['session_id'] = f"session_{int(time.time())}_{os.urandom(4).hex()}"
         
+        # Inicia rastreamento de progresso
+        session_id = data['session_id']
+        progress_tracker = get_progress_tracker(session_id)
+        
+        # Função de callback para progresso
+        def progress_callback(step: int, message: str, details: str = None):
+            update_analysis_progress(session_id, step, message, details)
+        
         # Log dos dados recebidos
         logger.info(f"📊 Dados recebidos: Segmento={data.get('segmento')}, Produto={data.get('produto')}")
         
@@ -63,16 +73,20 @@ def analyze_market():
         
         logger.info(f"🔍 Query de pesquisa: {data['query']}")
         
-        # Executa análise abrangente
-        logger.info("🧠 Executando análise abrangente...")
-        analysis_result = enhanced_analysis_engine.generate_comprehensive_analysis(
+        # Executa análise GIGANTE ultra-detalhada
+        logger.info("🚀 Executando análise GIGANTE ultra-detalhada...")
+        analysis_result = ultra_detailed_analysis_engine.generate_gigantic_analysis(
             data,
-            session_id=data.get('session_id')
+            session_id=session_id,
+            progress_callback=progress_callback
         )
         
         # Verifica se a análise foi bem-sucedida
         if not analysis_result or not isinstance(analysis_result, dict):
             raise Exception("Análise retornou resultado inválido")
+        
+        # Marca progresso como completo
+        progress_tracker.complete()
         
         # Salva no banco de dados
         try:
@@ -80,6 +94,7 @@ def analyze_market():
             db_record = db_manager.create_analysis({
                 'segmento': data.get('segmento'),
                 'produto': data.get('produto'),
+                'descricao': data.get('dados_adicionais'),
                 'preco': data.get('preco'),
                 'publico': data.get('publico'),
                 'concorrentes': data.get('concorrentes'),
@@ -88,6 +103,14 @@ def analyze_market():
                 'orcamento_marketing': data.get('orcamento_marketing'),
                 'prazo_lancamento': data.get('prazo_lancamento'),
                 'status': 'completed',
+                'avatar_data': analysis_result.get('avatar_ultra_detalhado'),
+                'positioning_data': analysis_result.get('escopo'),
+                'competition_data': analysis_result.get('analise_concorrencia_detalhada'),
+                'marketing_data': analysis_result.get('estrategia_palavras_chave'),
+                'metrics_data': analysis_result.get('metricas_performance_detalhadas'),
+                'funnel_data': analysis_result.get('funil_vendas_detalhado'),
+                'market_intelligence': analysis_result.get('pesquisa_web_massiva'),
+                'action_plan': analysis_result.get('plano_acao_detalhado'),
                 'comprehensive_analysis': analysis_result
             })
             

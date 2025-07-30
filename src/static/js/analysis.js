@@ -5,9 +5,11 @@ class AnalysisManager {
     constructor() {
         this.isAnalyzing = false;
         this.currentStep = 0;
-        this.totalSteps = 8; // Aumentado para mais etapas
+        this.totalSteps = 13; // Atualizado para análise GIGANTE
         this.analysisStartTime = null;
         this.progressInterval = null;
+        this.progressPollingInterval = null;
+        this.sessionId = null;
         this.setupEventListeners();
     }
 
@@ -30,12 +32,13 @@ class AnalysisManager {
         this.isAnalyzing = true;
         this.analysisStartTime = Date.now();
         this.currentStep = 0;
+        this.sessionId = this.getSessionId();
 
         // Mostra área de progresso
         this.showProgressArea();
         
-        // Inicia animação de progresso
-        this.startProgressAnimation();
+        // Inicia rastreamento de progresso real
+        await this.startRealTimeProgress();
 
         try {
             // Coleta dados do formulário
@@ -56,8 +59,8 @@ class AnalysisManager {
 
             const result = await response.json();
             
-            // Finaliza progresso
-            this.completeProgress();
+            // Para polling de progresso
+            this.stopProgressPolling();
             
             // Exibe resultados
             setTimeout(() => {
@@ -67,9 +70,9 @@ class AnalysisManager {
         } catch (error) {
             console.error('Erro na análise:', error);
             this.showError(`Erro na análise: ${error.message}`);
+            this.stopProgressPolling();
         } finally {
             this.isAnalyzing = false;
-            this.stopProgressAnimation();
         }
     }
 
@@ -90,7 +93,7 @@ class AnalysisManager {
             objetivo_receita: document.getElementById('objetivo_receita')?.value || '',
             orcamento_marketing: document.getElementById('orcamento_marketing')?.value || '',
             prazo_lancamento: document.getElementById('prazo_lancamento')?.value || '',
-            session_id: this.getSessionId()
+            session_id: this.sessionId
         };
     }
 
@@ -117,16 +120,79 @@ class AnalysisManager {
         }
     }
 
-    startProgressAnimation() {
+    async startRealTimeProgress() {
+        try {
+            // Inicia rastreamento no backend
+            const response = await fetch('/api/progress/start_tracking', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    session_id: this.sessionId
+                })
+            });
+            
+            if (response.ok) {
+                // Inicia polling de atualizações
+                this.startProgressPolling();
+            } else {
+                console.error('Erro ao iniciar rastreamento de progresso');
+                // Fallback para animação simulada
+                this.startFallbackAnimation();
+            }
+        } catch (error) {
+            console.error('Erro no progresso em tempo real:', error);
+            this.startFallbackAnimation();
+        }
+    }
+    
+    startProgressPolling() {
+        this.progressPollingInterval = setInterval(async () => {
+            try {
+                const response = await fetch(`/api/progress/poll_updates/${this.sessionId}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.has_updates) {
+                        // Processa atualizações
+                        for (const update of data.updates) {
+                            this.updateProgressStep(
+                                update.current_step,
+                                update.current_message,
+                                update.detailed_message
+                            );
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Erro no polling de progresso:', error);
+            }
+        }, 1000); // Polling a cada segundo
+    }
+    
+    stopProgressPolling() {
+        if (this.progressPollingInterval) {
+            clearInterval(this.progressPollingInterval);
+            this.progressPollingInterval = null;
+        }
+    }
+    
+    startFallbackAnimation() {
+        // Animação de fallback caso o progresso real falhe
         const steps = [
             { text: '🔍 Coletando dados do formulário...', duration: 2000 },
             { text: '📊 Processando anexos inteligentes...', duration: 3000 },
-            { text: '🌐 Realizando pesquisa profunda na web...', duration: 8000 },
-            { text: '🧠 Analisando com Inteligência Artificial...', duration: 12000 },
-            { text: '🎯 Criando avatar ultra-detalhado...', duration: 5000 },
-            { text: '⚔️ Mapeando concorrência e oportunidades...', duration: 4000 },
+            { text: '🌐 Realizando pesquisa profunda massiva...', duration: 8000 },
+            { text: '🧠 Analisando com múltiplas IAs...', duration: 6000 },
+            { text: '👤 Criando avatar arqueológico completo...', duration: 5000 },
+            { text: '🧠 Gerando drivers mentais customizados...', duration: 4000 },
+            { text: '🎭 Desenvolvendo provas visuais instantâneas...', duration: 4000 },
+            { text: '🛡️ Construindo sistema anti-objeção...', duration: 3000 },
+            { text: '🎯 Arquitetando pré-pitch invisível...', duration: 3000 },
+            { text: '⚔️ Mapeando concorrência profunda...', duration: 4000 },
             { text: '📈 Calculando métricas e projeções...', duration: 3000 },
-            { text: '✨ Finalizando insights exclusivos...', duration: 2000 }
+            { text: '🔮 Predizendo futuro do mercado...', duration: 3000 },
+            { text: '✨ Consolidando insights exclusivos...', duration: 2000 }
         ];
 
         let currentStepIndex = 0;
@@ -146,11 +212,11 @@ class AnalysisManager {
         updateStep();
     }
 
-    updateProgressStep(step, text) {
+    updateProgressStep(step, text, details = null) {
         this.currentStep = step;
         
         // Atualiza barra de progresso
-        const progressBar = document.querySelector('.progress-bar');
+        const progressBar = document.querySelector('.progress-fill');
         if (progressBar) {
             const percentage = (step / this.totalSteps) * 100;
             progressBar.style.width = `${percentage}%`;
@@ -159,7 +225,7 @@ class AnalysisManager {
         // Atualiza texto do passo
         const stepText = document.getElementById('currentStep');
         if (stepText) {
-            stepText.textContent = text;
+            stepText.textContent = details || text;
         }
 
         // Atualiza contador
@@ -197,9 +263,6 @@ class AnalysisManager {
         }
     }
 
-    stopProgressAnimation() {
-        this.progressInterval = null;
-    }
 
     displayResults(result) {
         console.log('Resultado da análise:', result);
@@ -219,21 +282,21 @@ class AnalysisManager {
 
         // Exibe seções dos resultados
         this.displayAvatarSection(result.avatar_ultra_detalhado);
-        this.displayDriversSection(result.drivers_mentais_customizados);
+        this.displayDriversSection(result.drivers_mentais_sistema_completo);
         this.displayCompetitionSection(result.analise_concorrencia_profunda);
-        this.displayPositioningSection(result.estrategia_posicionamento);
+        this.displayPositioningSection(result.escopo);
         this.displayKeywordsSection(result.estrategia_palavras_chave);
-        this.displayMetricsSection(result.metricas_performance);
+        this.displayMetricsSection(result.metricas_performance_detalhadas);
         this.displayFunnelSection(result.funil_vendas_detalhado);
-        this.displayActionPlanSection(result.plano_acao_90_dias);
+        this.displayActionPlanSection(result.plano_acao_detalhado);
         this.displayInsightsSection(result.insights_exclusivos);
         this.displayMetadataSection(result.metadata);
         
         // Novas seções ultra-detalhadas
-        this.displayDriversSection(result.drivers_mentais_customizados);
         this.displayVisualProofsSection(result.provas_visuais_sugeridas);
         this.displayAntiObjectionSection(result.sistema_anti_objecao);
         this.displayPrePitchSection(result.pre_pitch_invisivel);
+        this.displayResearchSection(result.pesquisa_web_massiva);
 
         // Habilita botão de download PDF
         this.enablePdfDownload(result);
@@ -312,18 +375,27 @@ class AnalysisManager {
     }
 
     displayDriversSection(drivers) {
-        if (!drivers || !Array.isArray(drivers)) return;
+        if (!drivers) return;
 
         const container = document.getElementById('driversResults');
         if (!container) return;
 
-        const driversHtml = drivers.map((driver, index) => `
+        // Verifica se é o sistema completo ou lista simples
+        let driversList = [];
+        if (drivers.drivers_customizados) {
+            driversList = drivers.drivers_customizados;
+        } else if (Array.isArray(drivers)) {
+            driversList = drivers;
+        } else {
+            return;
+        }
+
+        const driversHtml = driversList.map((driver, index) => `
             <div class="driver-card">
                 <h4>${driver.nome || `Driver Mental ${index + 1}`}</h4>
                 <div class="driver-content">
                     <p><strong>Gatilho Central:</strong> ${driver.gatilho_central || 'N/A'}</p>
                     <p><strong>Definição:</strong> ${driver.definicao_visceral || 'N/A'}</p>
-                    <p><strong>Roteiro de Ativação:</strong> ${driver.roteiro_ativacao || 'N/A'}</p>
                     <p><strong>Momento Ideal:</strong> ${driver.momento_ideal || 'N/A'}</p>
                     
                     ${driver.roteiro_ativacao && typeof driver.roteiro_ativacao === 'object' ? `
@@ -491,6 +563,72 @@ class AnalysisManager {
             });
             
             html += `
+                    </div>
+                </div>
+            `;
+        }
+
+        html += `
+                </div>
+            </div>
+        `;
+
+        container.innerHTML = html;
+    }
+
+    displayResearchSection(research) {
+        if (!research) return;
+
+        const container = document.getElementById('researchResults');
+        if (!container) return;
+
+        let html = `
+            <div class="result-section">
+                <h3 class="section-title">🌐 Pesquisa Web Massiva</h3>
+                <div class="research-content">
+                    <div class="research-stats">
+                        <h4>📊 Estatísticas da Pesquisa</h4>
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <span class="stat-label">Total de Queries:</span>
+                                <span class="stat-value">${research.total_queries || 0}</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Total de Resultados:</span>
+                                <span class="stat-value">${research.total_resultados || 0}</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Conteúdo Extraído:</span>
+                                <span class="stat-value">${(research.conteudo_extraido_chars || 0).toLocaleString()} caracteres</span>
+                            </div>
+                        </div>
+                    </div>
+        `;
+
+        if (research.queries_executadas) {
+            html += `
+                <div class="queries-executed">
+                    <h4>🔍 Queries Executadas</h4>
+                    <ul>
+                        ${research.queries_executadas.slice(0, 10).map(query => `<li>${query}</li>`).join('')}
+                    </ul>
+                </div>
+            `;
+        }
+
+        if (research.resultados_detalhados) {
+            html += `
+                <div class="detailed-results">
+                    <h4>📄 Principais Resultados</h4>
+                    <div class="results-list">
+                        ${research.resultados_detalhados.slice(0, 10).map(result => `
+                            <div class="result-item">
+                                <h5>${result.title || 'Resultado'}</h5>
+                                <p class="result-url">${result.url || ''}</p>
+                                <p class="result-snippet">${result.snippet || ''}</p>
+                                <span class="result-source">Fonte: ${result.source || 'N/A'}</span>
+                            </div>
+                        `).join('')}
                     </div>
                 </div>
             `;
